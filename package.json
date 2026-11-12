@@ -1,25 +1,32 @@
 {
   "name": "club-treasurer-agent",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Autonomous Club Treasurer Agent with AI proposals and human approvals",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-  "start": "node server.js"
-},
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shagun12mehta-maker/club-treasurer-agent.git"
   },
-  "keywords": [],
+  "keywords": [
+    "paypal",
+    "ai-agent",
+    "treasurer",
+    "claude",
+    "hackathon"
+  ],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/shagun12mehta-maker/club-treasurer-agent/issues"
   },
   "homepage": "https://github.com/shagun12mehta-maker/club-treasurer-agent#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0",
     "dotenv": "^18.0.10",
     "express": "^5.3.0"
   }

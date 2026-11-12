@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Club Treasurer Agent — AI Proposes, Humans Approve</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --primary: #0070ba; /* PayPal Blue */
+      --primary-hover: #005ea6;
+      --accent: #38bdf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 40px;
+    }
+
+    header {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      background: linear-gradient(135deg, #0070ba, #00cfde);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    .brand h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
+    .brand p { font-size: 0.75rem; color: var(--accent); }
+
+    .treasury-pill {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+    .balance-val { color: var(--success); font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 1rem; }
+
+    main {
+      max-width: 1200px;
+      margin: 28px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Guardrail Banner */
+    .banner {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(0, 112, 186, 0.2));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Proposal Items */
+    .proposal-item {
+      background: #151f32;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      transition: all 0.2s ease;
+    }
+    .proposal-item:hover { border-color: var(--accent); }
+
+    .prop-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .prop-amount {
+      font-size: 1.25rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+    .badge-approved { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .badge-paid { background: rgba(56, 189, 248, 0.2); color: var(--accent); border: 1px solid var(--accent); }
+    .badge-rejected { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+
+    .flags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 10px 0;
+    }
+    .flag-tag {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      color: #fbbf24;
+    }
+    .flag-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #ef4444; }
+
+    .approval-box {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 0.8rem;
+    }
+
+    .actions-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-approve { background: var(--success); color: white; }
+    .btn-approve:hover { filter: brightness(1.1); }
+    .btn-reject { background: #334155; color: var(--text-muted); }
+    .btn-reject:hover { background: var(--danger); color: white; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    /* Chat Widget */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 480px;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .msg-user {
+      align-self: flex-end;
+      background: #0070ba;
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
+    .msg-ai {
+      align-self: flex-start;
+      background: #151f32;
+      border: 1px solid #334155;
+      border-bottom-left-radius: 2px;
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .chat-input {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: white;
+      font-family: inherit;
+      outline: none;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+
+    /* Audit Log Table */
+    .log-item {
+      font-size: 0.78rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 8px 0;
+      border-bottom: 1px solid #273549;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .log-actor { color: var(--accent); }
+    .log-action { color: #facc15; }
+    .log-time { color: var(--text-muted); }
+
+    /* Quick Action Chips */
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .chip {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: #94a3b8;
+    }
+    .chip:hover { border-color: var(--accent); color: white; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div>
+        <h1>Club Treasurer Agent</h1>
+        <p>AI Proposes, Humans Approve &bull; PayPal Sandbox Integration</p>
+      </div>
+    </div>
+    <div class="treasury-pill">
+      <span>Treasury Balance:</span>
+      <span class="balance-val" id="treasuryBalance">$5,000.00</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Column: Officer Approvals Queue & Scanner -->
+    <div>
+      <div class="banner">
+        <span>🛡️</span>
+        <div>
+          <strong>Safety Guardrails Active:</strong> Hard Cap \$250 &bull; Dual-Officer Signature for &ge;\$75 &bull; Duplicate & New Payee Detection.
+        </div>
+      </div>
+
+      <!-- Quick Receipt Simulator -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🧾 Scan & Propose Receipt</div>
+          <button class="btn-primary" onclick="triggerMockReceiptScan()">Simulate Receipt Scan</button>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          Scans receipt via <strong>Claude Vision</strong>, parses line items, checks safety guardrails, and creates a pending proposal with required officer signatures.
+        </p>
+      </div>
+
+      <!-- Pending Officer Approvals -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">✍️ Officer Approval Queue (<span id="pendingCount">0</span>)</div>
+          <button class="btn-reject" onclick="loadProposals()" style="font-size: 0.75rem;">Refresh</button>
+        </div>
+        <div id="proposalsList">
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Loading proposals...</p>
+        </div>
+      </div>
+
+      <!-- Public Transparency Audit Log -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 Transparency Audit Trail</div>
+        </div>
+        <div id="auditLogsList" style="max-height: 250px; overflow-y: auto;">
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Loading audit trail...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: AI Treasurer Chatbot -->
+    <div>
+      <div class="card chat-container">
+        <div class="card-header">
+          <div class="card-title">🤖 AI Treasurer Assistant</div>
+          <span style="font-size: 0.75rem; color: var(--success);">&#x25CF; Online (Claude Agent)</span>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg msg-ai">
+            👋 Hello! I am the <strong>AI Club Treasurer</strong>. I can propose reimbursements, issue PayPal membership invoices, and check treasury limits.<br><br>
+            <em>Remember: I never send money autonomously. Every payout requires human officer approval!</em>
+          </div>
+        </div>
+
+        <div class="chips">
+          <div class="chip" onclick="sendQuickChat('Check treasury balance')">💰 Check balance</div>
+          <div class="chip" onclick="sendQuickChat('Reimburse $45 to alex@club.edu for pizza')">🍕 Reimburse $45</div>
+          <div class="chip" onclick="sendQuickChat('Reimburse $120 to sarah@club.edu for robotics parts')">🤖 $120 (Dual-Approval)</div>
+          <div class="chip" onclick="sendQuickChat('Reimburse $300 to vendor@parts.com')">🚫 $300 (Over Limit)</div>
+        </div>
+
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" class="chat-input" placeholder="Type a request (e.g. Reimburse $35 to john@club.edu)..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+          <button class="btn-primary" onclick="sendChatMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function loadTreasury() {
+      try {
+        const res = await fetch('/api/treasury');
+        const data = await res.json();
+        document.getElementById('treasuryBalance').textContent = `$${data.currentBalance.toFixed(2)}`;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadProposals() {
+      try {
+        const res = await fetch('/api/proposals');
+        const proposals = await res.json();
+        const container = document.getElementById('proposalsList');
+        const pending = proposals.filter(p => p.status === 'PENDING_APPROVAL');
+        document.getElementById('pendingCount').textContent = pending.length;
+
+        if (proposals.length === 0) {
+          container.innerHTML = '<p style="color: #64748b; font-size: 0.85rem;">No proposals recorded yet.</p>';
+          return;
+        }
+
+        container.innerHTML = proposals.map(p => {
+          const badgeClass = `badge-${p.status.toLowerCase()}`;
+          const isPending = p.status === 'PENDING_APPROVAL';
+          const approvalsDone = p.approvals ? p.approvals.length : 0;
+          const reqApprovals = p.requiredApprovals || 1;
+
+          const flagsHtml = (p.flags || []).map(f => {
+            const isDanger = f.includes('CRITICAL');
+            return `<span class="flag-tag ${isDanger ? 'flag-danger' : ''}">${f.replace(/_/g, ' ')}</span>`;
+          }).join('');
+
+          const approvedByList = (p.approvals || []).map(a => `${a.officer} (${new Date(a.timestamp).toLocaleTimeString()})`).join(', ');
+
+          let actionButtons = '';
+          if (isPending) {
+            actionButtons = `
+              <div class="actions-row">
+                <button class="btn-approve" onclick="approveProposal('${p.id}', 'Treasurer')">Sign as Treasurer</button>
+                ${reqApprovals > 1 ? `<button class="btn-approve" style="background:#2563eb;" onclick="approveProposal('${p.id}', 'President')">Sign as President</button>` : ''}
+                <button class="btn-reject" onclick="rejectProposal('${p.id}')">Reject</button>
+              </div>
+            `;
+          } else if (p.status === 'PAID') {
+            actionButtons = `<div style="font-size: 0.75rem; color: var(--success); margin-top: 8px;">✅ Disbursed via PayPal Payouts (${p.payoutBatchId || 'Batch #' + p.id})</div>`;
+          }
+
+          return `
+            <div class="proposal-item">
+              <div class="prop-top">
+                <div>
+                  <strong>${p.title}</strong>
+                  <div style="font-size: 0.75rem; color: #94a3b8;">Payee: ${p.recipientEmail} (${p.requester})</div>
+                </div>
+                <div style="text-align: right;">
+                  <div class="prop-amount">$${parseFloat(p.amount).toFixed(2)}</div>
+                  <span class="badge ${badgeClass}">${p.status.replace(/_/g, ' ')}</span>
+                </div>
+              </div>
+
+              ${flagsHtml ? `<div class="flags-row">${flagsHtml}</div>` : ''}
+
+              <div class="approval-box">
+                <div>Signatures: <strong>${approvalsDone} / ${reqApprovals}</strong> required</div>
+                ${approvedByList ? `<div style="color: var(--accent); margin-top: 4px;">Signed by: ${approvedByList}</div>` : '<div style="color: #64748b;">Awaiting officer signature</div>'}
+              </div>
+
+              ${actionButtons}
+            </div>
+          `;
+        }).join('');
+
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadAuditLogs() {
+      try {
+        const res = await fetch('/api/audit-logs');
+        const logs = await res.json();
+        const container = document.getElementById('auditLogsList');
+        
+        container.innerHTML = logs.map(l => `
+          <div class="log-item">
+            <div>
+              <span class="log-actor">[${l.actor}]</span>
+              <span class="log-action">${l.action}</span>: ${l.details}
+            </div>
+            <div class="log-time">${new Date(l.timestamp).toLocaleTimeString()}</div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function approveProposal(id, officerName) {
+      try {
+        const res = await fetch(`/api/proposals/${id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ officer: officerName })
+        });
+        const data = await res.json();
+        if (!res.ok) alert(data.error || 'Approval failed');
+        loadAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function rejectProposal(id) {
+      const reason = prompt('Enter rejection reason:');
+      if (!reason) return;
+      try {
+        await fetch(`/api/proposals/${id}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ officer: 'Treasurer', reason })
+        });
+        loadAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function triggerMockReceiptScan() {
+      try {
+        const res = await fetch('/api/receipts/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipientEmail: 'member@club.edu', requester: 'Alex Chen' })
+        });
+        const data = await res.json();
+        alert(`Receipt Scanned! Merchant: ${data.receipt.merchant}, Total: $${data.receipt.total}.\nProposal #${data.proposal.id} created.`);
+        loadAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      const container = document.getElementById('chatMessages');
+      container.innerHTML += `<div class="msg msg-user">${text}</div>`;
+      container.scrollTop = container.scrollHeight;
+
+      try {
+        const res = await fetch('/api/agent/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        container.innerHTML += `<div class="msg msg-ai">${data.reply.replace(/\n/g, '<br>')}</div>`;
+        container.scrollTop = container.scrollHeight;
+        loadAll();
+      } catch (e) {
+        container.innerHTML += `<div class="msg msg-ai" style="color:var(--danger)">Error: ${e.message}</div>`;
+      }
+    }
+
+    function sendQuickChat(text) {
+      document.getElementById('chatInput').value = text;
+      sendChatMessage();
+    }
+
+    function loadAll() {
+      loadTreasury();
+      loadProposals();
+      loadAuditLogs();
+    }
+
+    loadAll();
+    setInterval(loadAll, 6000);
+  </script>
+</body>
+</html>
