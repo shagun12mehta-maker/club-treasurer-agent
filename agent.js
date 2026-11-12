@@ -23,8 +23,13 @@ Guidelines:
  * Main Agent conversation handler with tool-calling loop.
  */
 export async function chatWithTreasurerAgent(userMessage, conversationHistory = []) {
+  const isRealKey = ANTHROPIC_API_KEY &&
+    !ANTHROPIC_API_KEY.includes('your_') &&
+    !ANTHROPIC_API_KEY.includes('mock_') &&
+    ANTHROPIC_API_KEY.startsWith('sk-ant-');
+
   // If Anthropic key is not configured, fall back to mock agent handler
-  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes('your_')) {
+  if (!isRealKey) {
     return handleMockAgentTurn(userMessage);
   }
 

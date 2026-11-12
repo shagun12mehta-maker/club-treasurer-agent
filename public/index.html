@@ -519,7 +519,11 @@
           body: JSON.stringify({ recipientEmail: 'member@club.edu', requester: 'Alex Chen' })
         });
         const data = await res.json();
-        alert(`Receipt Scanned! Merchant: ${data.receipt.merchant}, Total: $${data.receipt.total}.\nProposal #${data.proposal.id} created.`);
+        if (!res.ok) {
+          alert('Scan failed: ' + (data.error || 'Unknown error'));
+          return;
+        }
+        alert(`Receipt Scanned!\nMerchant: ${data.receipt.merchant}\nTotal: $${parseFloat(data.receipt.total).toFixed(2)}\nCategory: ${data.receipt.category}\nProposal #${data.proposal.id} created.`);
         loadAll();
       } catch (e) {
         alert(e.message);

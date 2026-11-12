@@ -8,12 +8,17 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
  * Falls back to mock parser if ANTHROPIC_API_KEY is not set.
  */
 export async function scanReceiptWithAI({ imageBase64, mediaType = 'image/jpeg', mockFallback = true }) {
-  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes('your_')) {
+  const isRealKey = ANTHROPIC_API_KEY &&
+    !ANTHROPIC_API_KEY.includes('your_') &&
+    !ANTHROPIC_API_KEY.includes('mock_') &&
+    ANTHROPIC_API_KEY.startsWith('sk-ant-');
+
+  if (!isRealKey) {
     if (mockFallback) {
-      console.log('ℹ️ Anthropic API Key not set — using demo mock receipt scanner');
+      console.log('ℹ️ Anthropic API Key not set/mock — using demo mock receipt scanner');
       return getMockReceiptResult();
     }
-    throw new Error('ANTHROPIC_API_KEY not configured in .env');
+    throw new Error('Valid ANTHROPIC_API_KEY not configured in .env');
   }
 
   const prompt = `You are an expert club treasurer AI. Analyze this receipt or expense voucher image and extract the structured financial data.
@@ -82,8 +87,39 @@ Return ONLY a valid JSON object with no markdown wrapper, comments, or backticks
   }
 }
 
-function getMockReceiptResult() {
-  return {
+const MOCK_RECEIPTS = [
+  {
+    merchant: "Robotics & IoT Electronics Hub",
+    date: new Date().toISOString().split('T')[0],
+    items: [
+      { name: "Arduino Uno R4 Starter Kit", quantity: 2, price: 54.00 },
+      { name: "Ultrasonic Sensors Pack", quantity: 3, price: 18.00 },
+      { name: "Jumper Wires & Breadboards", quantity: 1, price: 12.50 }
+    ],
+    subtotal: 104.50,
+    tax: 11.00,
+    total: 115.50,
+    currency: "USD",
+    category: "Hardware & Lab Supplies",
+    confidenceScore: 0.99,
+    notes: "Microcontroller parts for Club Hackathon Build Track"
+  },
+  {
+    merchant: "Campus QuickPrint & Posters",
+    date: new Date().toISOString().split('T')[0],
+    items: [
+      { name: "Club Hackathon A3 Posters (Qty 50)", quantity: 1, price: 25.00 },
+      { name: "Laminating Pouches", quantity: 1, price: 8.50 }
+    ],
+    subtotal: 33.50,
+    tax: 2.50,
+    total: 36.00,
+    currency: "USD",
+    category: "Marketing & Supplies",
+    confidenceScore: 0.97,
+    notes: "Promotional banner and poster printing"
+  },
+  {
     merchant: "Campus Pizza & Bakery",
     date: new Date().toISOString().split('T')[0],
     items: [
@@ -98,7 +134,15 @@ function getMockReceiptResult() {
     category: "Food & Catering",
     confidenceScore: 0.98,
     notes: "Food supplies for Club Weekly Hack Night"
-  };
+  }
+];
+
+let mockIndex = 0;
+
+function getMockReceiptResult() {
+  const receipt = MOCK_RECEIPTS[mockIndex % MOCK_RECEIPTS.length];
+  mockIndex++;
+  return { ...receipt, date: new Date().toISOString().split('T')[0] };
 }
 
 export default {
